@@ -1,0 +1,420 @@
+# Laporan Simulasi Interaktif Model Komunikasi dalam Sistem Terdistribusi
+
+**Nama:** Adji Zahra Mahdiyyah
+**NIM:** 11231004
+**Mata Kuliah:** Sistem Paralel dan Terdistribusi
+**Kelas:** A
+
+## 1. Pendahuluan
+
+### 1.1 Tujuan Simulasi
+Simulasi interaktif ini bertujuan untuk memberikan pemahaman praktis tentang dampak berbagai model komunikasi terhadap aliran data dan interaksi dalam sistem terdistribusi. Melalui simulasi ini, pengguna dapat mengamati secara langsung bagaimana model komunikasi yang berbeda mempengaruhi performa sistem, latency, throughput, dan skalabilitas.
+
+### 1.2 Ruang Lingkup
+Simulasi mencakup tiga model komunikasi utama:
+- Request-Response
+- Publish-Subscribe
+- Message Passing
+
+Setiap model diimplementasikan dengan komponen sistem yang realistis dan skenario dunia nyata yang relevan.
+
+## 2. Model Komunikasi yang Diimplementasikan
+
+### 2.1 Request-Response Model
+**Deskripsi:** Model komunikasi synchronous dimana client mengirim request dan menunggu response dari server.
+
+**Karakteristik:**
+- Synchronous communication
+- Tight coupling antara client dan server
+- Cocok untuk operasi yang memerlukan immediate response
+
+**Skenario Dunia Nyata:** E-commerce application dimana user mencari informasi produk.
+
+**Komponen:**
+- Client: Mobile application user
+- Server: Product database server
+- Queue: Asynchronous request handling
+
+### 2.2 Publish-Subscribe Model
+**Deskripsi:** Model komunikasi asynchronous dimana publisher mengirim pesan ke semua subscribers yang telah subscribe.
+
+**Karakteristik:**
+- Asynchronous communication
+- Loose coupling
+- Scalable untuk multiple receivers
+- Fire-and-forget approach
+
+**Skenario Dunia Nyata:** IoT sensor network dimana sensor mengirim data ke multiple monitoring systems.
+
+**Komponen:**
+- Publisher: IoT sensor device
+- Subscribers: Monitoring dashboards (3 subscribers)
+- Topic-based routing system
+
+### 2.3 Message Passing Model
+**Deskripsi:** Model peer-to-peer dimana node dapat mengirim pesan langsung ke node lain dalam sistem.
+
+**Karakteristik:**
+- Decentralized architecture
+- Direct node-to-node communication
+- Highly scalable
+- Complex routing logic
+
+**Skenario Dunia Nyata:** Distributed computing cluster dimana worker nodes berkomunikasi untuk task distribution.
+
+**Komponen:**
+- Nodes: Worker processes (4 nodes)
+- Direct communication channels
+- Decentralized message routing
+
+## 3. Arsitektur Simulasi
+
+### 3.1 Teknologi yang Digunakan
+- **Bahasa Pemrograman:** Python 3.x
+- **GUI Framework:** Tkinter
+- **Concurrency:** Threading module
+- **Message Passing:** Queue (thread-safe)
+- **Latency Simulation:** Time dan Random modules
+
+### 3.2 Struktur Kode
+```
+CommunicationSimulator (Main Class)
+├── __init__(): Inisialisasi GUI dan komponen
+├── setup_gui(): Setup interface pengguna
+├── switch_model(): Switching antar model komunikasi
+├── draw_*_diagram(): Visualisasi untuk setiap model
+├── animate_message(): Animasi pesan bergerak
+├── send_*_message(): Handler untuk setiap model
+├── simulate_*(): Thread simulation untuk setiap model
+├── log_message(): Logging aktivitas
+├── update_metrics(): Update metrik performa
+└── on_closing(): Cleanup saat exit
+```
+
+### 3.3 Mekanisme Threading
+Setiap model komunikasi berjalan dalam thread terpisah untuk mensimulasikan paralelisme:
+- Thread Request-Response: Menangani client-server communication
+- Thread Publish-Subscribe: Menangani publisher-subscriber broadcasting
+- Thread Message Passing: Menangani peer-to-peer messaging
+
+## 4. Implementasi Logika Interaksi
+
+### 4.1 Request-Response Implementation
+```python
+def simulate_rr(self):
+    while self.running:
+        try:
+            message, start_time = self.client_queue.get(timeout=1)
+            time.sleep(random.uniform(0.2, 0.8))  # Network latency
+            latency = time.time() - start_time
+            response = f"Response untuk: {message}"
+            self.log_message(f"Server merespons: {response}")
+            self.metrics["Request-Response"]["count"] += 1
+            self.metrics["Request-Response"]["latency"].append(latency)
+        except queue.Empty:
+            pass
+```
+
+**Logika:**
+1. Client mengirim request ke queue
+2. Server thread mengambil dari queue
+3. Simulasi network delay
+4. Server generate response
+5. Update metrics (count, latency)
+
+### 4.2 Publish-Subscribe Implementation
+```python
+def simulate_ps(self):
+    while self.running:
+        try:
+            message, start_time = self.publisher_queue.get(timeout=1)
+            time.sleep(random.uniform(0.1, 0.5))  # Broadcast delay
+            latency = time.time() - start_time
+            for i in range(3):
+                self.log_message(f"Subscriber {i+1} menerima: {message}")
+            self.metrics["Publish-Subscribe"]["count"] += 1
+            self.metrics["Publish-Subscribe"]["latency"].append(latency)
+        except queue.Empty:
+            pass
+```
+
+**Logika:**
+1. Publisher mengirim message ke queue
+2. Thread mengambil message
+3. Simulasi broadcast delay
+4. Semua subscribers menerima message
+5. Update metrics
+
+### 4.3 Message Passing Implementation
+```python
+def simulate_mp(self):
+    while self.running:
+        for i, node_queue in enumerate(self.nodes):
+            try:
+                message, to_node, start_time = node_queue.get(timeout=0.1)
+                time.sleep(random.uniform(0.3, 1.0))  # Routing delay
+                latency = time.time() - start_time
+                self.log_message(f"Node {to_node+1} menerima dari Node {i+1}: {message}")
+                self.metrics["Message Passing"]["count"] += 1
+                self.metrics["Message Passing"]["latency"].append(latency)
+            except queue.Empty:
+                pass
+```
+
+**Logika:**
+1. Node sender mengirim message ke queue target node
+2. Thread check semua node queues
+3. Simulasi routing delay
+4. Target node menerima message
+5. Update metrics
+
+## 5. Representasi Visual
+
+### 5.1 Diagram Interaktif
+- **Canvas Tkinter:** Area visualisasi utama (1200x800 pixels)
+- **Color Coding:**
+  - Request-Response: Client (lightblue), Server (lightgreen)
+  - Publish-Subscribe: Publisher (lightcoral), Subscribers (lightyellow)
+  - Message Passing: Nodes (lightcyan)
+
+### 5.2 Animasi Pesan
+```python
+def animate_message(self, start_x, start_y, end_x, end_y, message):
+    msg_id = self.canvas.create_text(start_x, start_y, text=message, fill="red")
+    dx = (end_x - start_x) / 20  # 20 steps animation
+    dy = (end_y - start_y) / 20
+    def move():
+        nonlocal msg_id
+        self.canvas.move(msg_id, dx, dy)
+        current_pos = self.canvas.coords(msg_id)
+        if abs(current_pos[0] - end_x) > abs(dx):
+            self.root.after(50, move)  # 50ms delay per step
+        else:
+            self.canvas.delete(msg_id)  # Remove message when reached destination
+    move()
+```
+
+**Fitur Animasi:**
+- Pesan bergerak smooth dari sender ke receiver
+- 20 step animation dengan 50ms delay per step
+- Auto-cleanup saat pesan sampai tujuan
+
+### 5.3 Real-time Updates
+- Diagram berubah saat model dipilih
+- Animasi pesan saat komunikasi terjadi
+- Visual feedback untuk setiap interaksi
+
+## 6. Interaksi Pengguna
+
+### 6.1 Model Selection
+- Radio buttons untuk memilih model komunikasi
+- Auto-switch diagram dan controls
+- Scenario-based selection (E-commerce, IoT, Distributed)
+
+### 6.2 Input Controls
+- **Request-Response:** Entry field untuk request message
+- **Publish-Subscribe:** Entry field untuk sensor data
+- **Message Passing:** Dropdown untuk from/to nodes + message field
+
+### 6.3 Action Buttons
+- "Kirim Request" untuk Request-Response
+- "Publish Data" untuk Publish-Subscribe
+- "Send Message" untuk Message Passing
+
+### 6.4 Feedback System
+- **Log Area:** Real-time logging semua aktivitas
+- **Metrics Display:** Live update count, latency, throughput
+- **Visual Feedback:** Animasi dan diagram updates
+
+## 7. Mekanisme Perbandingan
+
+### 7.1 Metrik Performa
+Simulasi menyediakan tiga metrik utama untuk perbandingan:
+
+1. **Message Count:** Total pesan yang diproses per model
+2. **Average Latency:** Rata-rata waktu dari send ke receive (milisecond)
+3. **Throughput:** Pesan per detik (messages/second)
+
+### 7.2 Formula Perhitungan
+```python
+def update_metrics(self):
+    current_time = time.time()
+    elapsed = current_time - self.start_time
+    for model, data in self.metrics.items():
+        if data["latency"]:
+            avg_latency = sum(data["latency"]) / len(data["latency"]) * 1000  # Convert to ms
+        else:
+            avg_latency = 0
+        throughput = data["count"] / elapsed if elapsed > 0 else 0
+        # Update GUI labels
+```
+
+### 7.3 Analisis Perbandingan
+- **Latency:** Request-Response vs Publish-Subscribe vs Message Passing
+- **Throughput:** Efisiensi broadcast vs point-to-point
+- **Scalability:** Dampak jumlah nodes terhadap performa
+- **Reliability:** Trade-offs dalam fault tolerance
+
+## 8. Cara Menjalankan Simulasi
+
+### 8.1 Prerequisites
+- Python 3.x terinstall
+- Tkinter library (biasanya included dengan Python)
+- Operating System: Windows/Linux/MacOS
+
+### 8.2 Langkah Menjalankan
+1. **Buka Terminal/Command Prompt**
+   ```
+   cd d:\sister\tugas2_model_komunikasi
+   ```
+
+2. **Jalankan Simulasi**
+   ```
+   python simulasi.py
+   ```
+
+3. **Interface akan muncul** dengan window 1200x800 pixels
+
+### 8.3 Cara Berinteraksi
+
+#### Mode Request-Response:
+1. Pilih "Request-Response" atau "E-commerce" scenario
+2. Ketik request di field "Request (e.g., 'Get product info'):"
+3. Klik "Kirim Request"
+4. Amati animasi pesan dari Client ke Server
+5. Lihat response di log area
+
+#### Mode Publish-Subscribe:
+1. Pilih "Publish-Subscribe" atau "IoT" scenario
+2. Ketik data sensor di field "Sensor Data (e.g., 'Temperature: 25°C'):"
+3. Klik "Publish Data"
+4. Amati animasi broadcast ke 3 subscribers
+5. Lihat reception di log area
+
+#### Mode Message Passing:
+1. Pilih "Message Passing" atau "Distributed" scenario
+2. Pilih "From Node" dan "To Node" dari dropdown
+3. Ketik message di field "Message:"
+4. Klik "Send Message"
+5. Amati animasi direct node-to-node
+6. Lihat delivery di log area
+
+### 8.4 Mengamati Hasil
+- **Log Area:** Timeline semua aktivitas komunikasi
+- **Metrics:** Real-time update performa per model
+- **Canvas:** Visual representation dan animasi
+
+## 9. Interpretasi Hasil Simulasi
+
+### 9.1 Latency Analysis
+- **Request-Response:** 200-800ms (network round-trip)
+- **Publish-Subscribe:** 100-500ms (broadcast delay)
+- **Message Passing:** 300-1000ms (routing complexity)
+
+**Interpretasi:** Request-Response memiliki latency paling konsisten untuk single interactions, sementara Message Passing memiliki variasi tertinggi karena routing complexity.
+
+### 9.2 Throughput Analysis
+- **Request-Response:** Moderate throughput, limited by synchronous nature
+- **Publish-Subscribe:** High throughput untuk broadcast scenarios
+- **Message Passing:** Variable throughput tergantung network topology
+
+**Interpretasi:** Publish-Subscribe menunjukkan efisiensi tertinggi untuk one-to-many communication patterns.
+
+### 9.3 Scalability Insights
+- **Request-Response:** Scalable untuk client-server, bottleneck pada server capacity
+- **Publish-Subscribe:** Highly scalable untuk large number of subscribers
+- **Message Passing:** Most scalable untuk peer-to-peer architectures
+
+### 9.4 Reliability Considerations
+- **Request-Response:** High reliability untuk critical operations
+- **Publish-Subscribe:** Loose coupling, fault-tolerant
+- **Message Passing:** Decentralized, resilient terhadap single-point failures
+
+## 10. Sorotan Implementasi Model Komunikasi
+
+### 10.1 Request-Response (Lines 150-170)
+```python
+def send_request(self):
+    message = self.rr_message.get()
+    if message:
+        start_time = time.time()
+        self.client_queue.put((message, start_time))
+        self.animate_message(200, 200, 600, 200, message)
+        self.log_message(f"Client mengirim request: {message}")
+        self.rr_message.delete(0, tk.END)
+```
+
+**Sorotan:** Synchronous communication pattern dengan clear request-response cycle.
+
+### 10.2 Publish-Subscribe (Lines 180-195)
+```python
+def publish_message(self):
+    message = self.ps_message.get()
+    if message:
+        start_time = time.time()
+        self.publisher_queue.put((message, start_time))
+        for i in range(3):
+            x = 450 + i * 150
+            y = 150 + i * 50
+            self.animate_message(200, 200, x, y, message)
+        self.log_message(f"Publisher publish data: {message}")
+        self.ps_message.delete(0, tk.END)
+```
+
+**Sorotan:** Asynchronous broadcast ke multiple subscribers dengan loose coupling.
+
+### 10.3 Message Passing (Lines 205-220)
+```python
+def send_mp_message(self):
+    from_node = int(self.mp_from.get().split()[1]) - 1
+    to_node = int(self.mp_to.get().split()[1]) - 1
+    message = self.mp_message.get()
+    if message and from_node != to_node:
+        start_time = time.time()
+        self.nodes[from_node].put((message, to_node, start_time))
+        start_x, start_y = self.node_positions[from_node]
+        end_x, end_y = self.node_positions[to_node]
+        self.animate_message(start_x, start_y, end_x, end_y, message)
+        self.log_message(f"Node {from_node+1} mengirim ke Node {to_node+1}: {message}")
+        self.mp_message.delete(0, tk.END)
+```
+
+**Sorotan:** Peer-to-peer communication dengan direct node addressing.
+
+## 11. Kesimpulan
+
+### 11.1 Pencapaian Tujuan
+Simulasi ini berhasil mendemonstrasikan:
+- Implementasi akurat tiga model komunikasi utama
+- Representasi visual yang interaktif dan informatif
+- Interface pengguna yang intuitif
+- Mekanisme perbandingan yang komprehensif
+- Relevansi dengan skenario dunia nyata
+
+### 11.2 Pembelajaran Utama
+1. **Request-Response** cocok untuk operasi yang memerlukan immediate feedback
+2. **Publish-Subscribe** ideal untuk scalable broadcasting
+3. **Message Passing** terbaik untuk decentralized peer-to-peer systems
+4. Setiap model memiliki trade-offs dalam latency, throughput, dan scalability
+
+### 11.3 Rekomendasi Penggunaan
+- **E-commerce:** Request-Response untuk product queries
+- **IoT Systems:** Publish-Subscribe untuk sensor data distribution
+- **Distributed Computing:** Message Passing untuk inter-node communication
+
+## 12. Lampiran
+
+### 12.1 Kode Sumber Lengkap
+File: `simulasi.py` (lihat file terpisah)
+
+### 12.2 Dokumentasi Kode
+File: `README.md` (lihat file terpisah)
+
+### 12.3 Screenshot Interface
+[Interface screenshots dapat disertakan jika diperlukan]
+
+---
+
+**Dibuat oleh:** [Nama Anda]
+**Tanggal Finalisasi:** 13 April 2026
+**Versi Simulasi:** 2.0
