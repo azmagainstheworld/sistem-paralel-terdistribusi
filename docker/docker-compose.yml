@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: dsync-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - dsync-network
+
+  node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: dsync-node1
+    hostname: node1
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - NODE_ID=node1
+      - NODE_PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - PEERS=http://node2:8000,http://node3:8000
+    ports:
+      - "8001:8000"
+    depends_on:
+      - redis
+    networks:
+      - dsync-network
+
+  node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: dsync-node2
+    hostname: node2
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - NODE_ID=node2
+      - NODE_PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - PEERS=http://node1:8000,http://node3:8000
+    ports:
+      - "8002:8000"
+    depends_on:
+      - redis
+    networks:
+      - dsync-network
+
+  node3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: dsync-node3
+    hostname: node3
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - NODE_ID=node3
+      - NODE_PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - PEERS=http://node1:8000,http://node2:8000
+    ports:
+      - "8003:8000"
+    depends_on:
+      - redis
+    networks:
+      - dsync-network
+
+networks:
+  dsync-network:
+    driver: bridge
